@@ -27,11 +27,13 @@ def scan_mem() -> dict:
     return addresses
 
 
-def update_mem(addrs1: dict, addrs2: dict):
-    """ Takes in 2 dictionaries of addresses and updates the first one with values from the second """
+def update_mem(addrs1: dict, addrs2: dict) -> dict:
+    """ Takes in 2 dictionaries of addresses and returns the first one with new values from the second """
+    updated = addrs1.copy()
     for addr in addrs2.keys():
         if addr in addrs1.keys():
-            addrs1[addr].update(addrs2[addr].value)
+            updated[addr] = addrs2[addr].value
+    return updated
 
 
 def find_val(addrs, value):
@@ -39,6 +41,33 @@ def find_val(addrs, value):
     validated = {}
     for addr in addrs.keys():
         if addrs[addr].value == value:
+            validated.update({addr, addrs[addr]})
+    return validated
+
+
+def values_same(addrs: dict) -> dict:
+    """ Returns any values that stayed the same between scans """
+    validated = {}
+    for addr in addrs.keys():
+        if addrs[addr].value == addrs[addr].prev_value:
+            validated.update({addr, addrs[addr]})
+    return validated
+
+
+def values_greater(addrs: dict) -> dict:
+    """ Returns any values that increased between scans """
+    validated = {}
+    for addr in addrs.keys():
+        if addrs[addr].value > addrs[addr].prev_value:
+            validated.update({addr, addrs[addr]})
+    return validated
+
+
+def values_less(addrs: dict) -> dict:
+    """ Returns any values that decreased between scans """
+    validated = {}
+    for addr in addrs.keys():
+        if addrs[addr].value < addrs[addr].prev_value:
             validated.update({addr, addrs[addr]})
     return validated
 
@@ -119,15 +148,17 @@ while not to_exit:
     elif choice == "e":
         val = input("Enter a value: ")
         scan = scan_mem()
-        # TODO: combine scan and filtered
         # TODO: convert val to hex based on data_format
-        filtered_addresses = find_val(filtered_addresses, val)
+        filtered_addresses = find_val(update_mem(saved_addresses, scan), val)
     elif choice == "=":
-        pass
+        scan = scan_mem()
+        filtered_addresses = values_same(update_mem(saved_addresses, scan))
     elif choice == ">":
-        pass
+        scan = scan_mem()
+        filtered_addresses = values_greater(update_mem(saved_addresses, scan))
     elif choice == "<":
-        pass
+        scan = scan_mem()
+        filtered_addresses = values_less(update_mem(saved_addresses, scan))
 
     elif choice == "f":
         print("Choose one of "+gren("[h]")+"ex, "+gren("[d]")+"ec, "+gren("[b]")+"inary, or "+gren("[s]")+"tring")
