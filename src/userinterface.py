@@ -18,27 +18,28 @@ class Address:
         self.prev_value = self.value
         self.value = new_value
 
-def scan_mem():
+
+def scan_mem() -> dict:
     """ Calls on Frida to scan the memory of a program """
     # TODO: use Frida
     # const p = Process.enumerateModules()[0]; console.log(hexdump(p.base));
-    addresses = []
+    addresses = {}
     return addresses
 
 
-def update_mem(addrs1:dict, addrs2:dict):
+def update_mem(addrs1: dict, addrs2: dict):
     """ Takes in 2 dictionaries of addresses and updates the first one with values from the second """
     for addr in addrs2.keys():
         if addr in addrs1.keys():
             addrs1[addr].update(addrs2[addr].value)
 
 
-def find_val(addrs, value, f):
+def find_val(addrs, value):
     """Searches memory to find an exact value, and returns any addresses that hold it"""
-    validated = []
-    for addr in addrs:
-        if addr.value == value:
-            validated.append(addr)
+    validated = {}
+    for addr in addrs.keys():
+        if addrs[addr].value == value:
+            validated.update({addr, addrs[addr]})
     return validated
 
 
@@ -71,10 +72,8 @@ proc_size = proc_info["size"]
 # Set up variables and data for my analyzer
 to_exit = False
 
-saved_addresses = []        # saved addresses
-filtered_addresses = []     # addresses on display on the screen
-saved_addresses_dict = {}        # saved addresses in a dictionary
-filtered_addresses_dict = {}     # filtered addresses in a dictionary
+saved_addresses: dict = {}        # saved addresses
+filtered_addresses: dict = {}     # addresses on display on the screen
 
 data_format = "hex"         # one of hex, dec, str, or bin
 
@@ -102,24 +101,27 @@ while not to_exit:
 
     choice = input("> ").lower()
 
-    # print("\n")
+    print("\n")
 
     if choice == "i":
         print("this will call Frida to dump the memory with hexdump")
-        scan_mem()
-        filtered_addresses.append(zero)
-        filtered_addresses.append(data)
+        filtered_addresses = scan_mem()
+        filtered_addresses.update({zero.addr: zero})
+        filtered_addresses.update({data.addr: data})
     elif choice == "s":
         print("Saving", len(filtered_addresses), "addresses")
-        saved_addresses += filtered_addresses
+        saved_addresses.update(filtered_addresses)
     elif choice == "a":     # print filtered addresses
-        print(addrs_to_str(filtered_addresses))
+        print(addrs_to_str(filtered_addresses.values()))
     elif choice == "p":     # print saved addresses
-        print(addrs_to_str(saved_addresses))
+        print(addrs_to_str(saved_addresses.values()))
 
     elif choice == "e":
+        val = input("Enter a value: ")
         scan = scan_mem()
-        filtered_addresses =
+        # TODO: combine scan and filtered
+        # TODO: convert val to hex based on data_format
+        filtered_addresses = find_val(filtered_addresses, val)
     elif choice == "=":
         pass
     elif choice == ">":
