@@ -58,7 +58,7 @@ def update_mem(addrs1: dict, addrs2: dict) -> dict:
     print("updated1:", updated)
     for addr in addrs2.keys():
         if addr in addrs1.keys():
-            updated[addr] = addrs2[addr].value
+            updated[addr] = addrs2[addr]
     print("updated:", updated)
     return updated
 
@@ -75,11 +75,10 @@ def find_val(addrs: dict, value: str) -> dict:
 def values_same(addrs: dict) -> dict:
     """ Returns any values that stayed the same between scans """
     validated = {}
-    print(addrs)
     for addr in addrs.keys():
-        print(addr, addrs[addr].value, addrs[addr].prev_value)
         if addrs[addr].value == addrs[addr].prev_value:
-            validated.update({addr, addrs[addr]})
+            validated[addr] = addrs[addr]
+
     return validated
 
 
@@ -88,7 +87,7 @@ def values_greater(addrs: dict) -> dict:
     validated = {}
     for addr in addrs.keys():
         if addrs[addr].value > addrs[addr].prev_value:
-            validated.update({addr, addrs[addr]})
+            validated[addr] = addrs[addr]
     return validated
 
 
@@ -97,7 +96,7 @@ def values_less(addrs: dict) -> dict:
     validated = {}
     for addr in addrs.keys():
         if addrs[addr].value < addrs[addr].prev_value:
-            validated.update({addr, addrs[addr]})
+            validated[addr] = addrs[addr]
     return validated
 
 
