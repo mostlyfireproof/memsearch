@@ -22,21 +22,48 @@ class Address:
 def scan_mem() -> dict:
     """ Calls on Frida to scan the memory of a program """
     # TODO: use Frida
+    # do i even need Frida
+    # for now assume that this gets a string
     # const p = Process.enumerateModules()[0]; console.log(hexdump(p.base));
     addresses = {}
+
+    from_frida = ""
+    lines = from_frida.split("\n")
+
+    for i in range(1, len(lines)):
+        data = lines[i].split()
+        location = data[0]
+
+        value = ""
+        for j in range(1, 17):
+            value += data[j]
+
+        addr = Address(location, value)
+        addresses.update({location, addr})
+
+    # examples
+    addresses.update({"0x0": Address("0x0", hex(0))})
+    addresses.update({"0x123": Address("0x123", hex(123))})
+
+    print(addresses)
     return addresses
 
 
 def update_mem(addrs1: dict, addrs2: dict) -> dict:
     """ Takes in 2 dictionaries of addresses and returns the first one with new values from the second """
-    updated = addrs1.copy()
+    updated = filtered_addresses
+    # for i in addrs1.keys():
+    #     updated.update(i, addrs1[i])
+
+    print("updated1:", updated)
     for addr in addrs2.keys():
         if addr in addrs1.keys():
             updated[addr] = addrs2[addr].value
+    print("updated:", updated)
     return updated
 
 
-def find_val(addrs, value):
+def find_val(addrs: dict, value: str) -> dict:
     """Searches memory to find an exact value, and returns any addresses that hold it"""
     validated = {}
     for addr in addrs.keys():
@@ -48,7 +75,9 @@ def find_val(addrs, value):
 def values_same(addrs: dict) -> dict:
     """ Returns any values that stayed the same between scans """
     validated = {}
+    print(addrs)
     for addr in addrs.keys():
+        print(addr, addrs[addr].value, addrs[addr].prev_value)
         if addrs[addr].value == addrs[addr].prev_value:
             validated.update({addr, addrs[addr]})
     return validated
@@ -106,13 +135,10 @@ filtered_addresses: dict = {}     # addresses on display on the screen
 
 data_format = "hex"         # one of hex, dec, str, or bin
 
-# samples to test things
-zero = Address("0x0", hex(0))
-data = Address("0x123", hex(123))
-
 print("Welcome to memsearch!")
 print("Analyzing", proc_name, "starting from", proc_base)
 while not to_exit:
+    # print(filtered_addresses)
     print("Choose an option: "
           "\n* "+gren("[i]")+"nitial scan"
           "\n* "+gren("[p]")+"rint SAVED addresses"
@@ -122,9 +148,11 @@ while not to_exit:
           "\n* "+gren("[>]")+" greater than previous scan, "
           + gren("[<]")+" less than previous scan, "+gren("[=]")+" same as previous scan"
           "\n* "+gren("[e]")+"xact value"
-                             
+                              
           "\n* choose "+gren("[f]")+"ormat"
                                     
+          "\n* "+gren("[w]")+"rite to an address"      
+                             
           # "\n* "+gren("[h]")+"elp"
           "\n* e"+gren("[x]")+"it")
 
@@ -135,8 +163,7 @@ while not to_exit:
     if choice == "i":
         print("this will call Frida to dump the memory with hexdump")
         filtered_addresses = scan_mem()
-        filtered_addresses.update({zero.addr: zero})
-        filtered_addresses.update({data.addr: data})
+
     elif choice == "s":
         print("Saving", len(filtered_addresses), "addresses")
         saved_addresses.update(filtered_addresses)
@@ -176,6 +203,16 @@ while not to_exit:
             # will need to do things like hex(ord( ))
         else:
             print(cr.Fore.YELLOW + "Invalid input!")
+
+    elif choice == "w":
+        print("Choose an address:")
+        location = input("> ")
+        # if the location is actually in the program range [proc_base, proc_base + proc_size]
+        # TODO: all memory if they look somewhere that's not in the filtered list
+        print("The current value at " + cr.Fore.BLUE + location + " is " + cr.Fore.CYAN + filtered_addresses[location])
+        print("Choose a new value")
+        value = input("> ")
+        # TODO: finish implementing this
 
     elif choice == "x":
         to_exit = True
