@@ -1,4 +1,6 @@
 import json
+import sys
+
 import frida
 import colorama as cr
 # colorama init:
@@ -20,7 +22,30 @@ class Address:
         self.value = new_value
 
 
-def scan_mem() -> dict:
+def on_message(message, data):
+    """ Receives a message from the script """
+    # print("[on_message] message:", message, "data:", data)
+    global filtered_addresses, proc_info
+
+    if not 'payload' in message:
+        print("Something went wrong!")
+
+    elif 'type' in message['payload']:
+        message_type = message['payload']['type']
+        if message_type == "properties":
+            print("AAAAAAAAA")
+            # print("data", message['payload']['data'])
+
+            proc_info = message['payload']['data']
+            print("pi", proc_info)
+
+        elif message_type == "dump":
+            print("dump")
+            # print(message['payload']['data'])
+            filtered_addresses = scan_mem(message['payload']['data'])
+
+
+def scan_mem(dump) -> dict:
     """ Calls on Frida to scan the memory of a program """
     # TODO: use Frida
     # do i even need Frida
@@ -28,7 +53,9 @@ def scan_mem() -> dict:
     # const p = Process.enumerateModules()[0]; console.log(hexdump(p.base));
     addresses = {}
 
-    from_frida = ""
+    from_frida = str(dump)
+    # print(from_frida)
+
     lines = from_frida.split("\n")
 
     for i in range(1, len(lines)):
@@ -126,21 +153,19 @@ def addrs_to_str(addrs: list):
 if len(sys.argv) < 2:
     raise ValueError(f"USAGE {sys.argv[0]} [program_to_search: e.g., /bin/ls or ./a.out]")
 
-proc = sys.argv[1]
-
 # attach to program up here
 inject_script = 'memsearch.js'
 with open(inject_script, 'r') as f:
     js = f.read()
 
+proc = sys.argv[1]
+device = frida.get_device('local')
+pid = device.spawn(proc, stdio="pipe",)
+session = device.attach(pid)
 
+print("Process started, injecting", inject_script)
+script = session.create_script(js)
 
-# temp data:
-proc_info = json.loads('{"name":"a.out","base":"0x55b29249d000","size":20480,"path":"/mnt/d/final/src/a.out"}')
-# get these from const p = Process.enumerateModules()[0]; console.log(JSON.stringify(p))
-proc_name = proc_info["name"]
-proc_base = proc_info["base"]     # reformat?
-proc_size = proc_info["size"]
 
 # Set up variables and data for my analyzer
 to_exit = False
@@ -149,6 +174,21 @@ saved_addresses: dict = {}        # saved addresses
 filtered_addresses: dict = {}     # addresses on display on the screen
 
 data_format = "hex"         # one of hex, dec, str, or bin
+
+proc_info = {}
+
+# Get properties
+script.on("message", on_message)
+script.load()
+
+print("BBBBBBbb")
+proc_info = json.loads(proc_info)
+print("proc info", proc_info)
+
+proc_name = proc_info["name"]
+proc_base = proc_info["base"]
+proc_size = proc_info["size"]
+
 
 #############################
 #   run the project here    #
@@ -162,7 +202,8 @@ while not to_exit:
           "\n* "+gren("[i]")+"nitial scan"
           "\n* "+gren("[p]")+"rint SAVED addresses"
           "\n* print FILTERED "+gren("[a]")+"ddresses"
-          "\n* "+gren("[s]")+"ave current filtered addresses"
+          "\n* "+gren("[s]")+"ave selected filtered address"                                  
+          "\n* "+gren("[S]")+"ave current filtered addresses"
           
           "\n* "+gren("[>]")+" greater than previous scan, "
           + gren("[<]")+" less than previous scan, "+gren("[=]")+" same as previous scan"
@@ -175,17 +216,25 @@ while not to_exit:
           # "\n* "+gren("[h]")+"elp"
           "\n* e"+gren("[x]")+"it")
 
-    choice = input("> ").lower()
+    choice = input("> ")    #.lower()
 
     print("\n")
 
     if choice == "i":
         print("this will call Frida to dump the memory with hexdump")
-        filtered_addresses = scan_mem()
+        # filtered_addresses = scan_mem()
+        script.load()
 
     elif choice == "s":
+        print("Which address would you like to save?")
+        addr = input("> ")
+        print("Saving", filtered_addresses[addr])
+        saved_addresses.update(filtered_addresses[addr])
+
+    elif choice == "S":
         print("Saving", len(filtered_addresses), "addresses")
         saved_addresses.update(filtered_addresses)
+
     elif choice == "a":     # print filtered addresses
         print(addrs_to_str(filtered_addresses.values()))
     elif choice == "p":     # print saved addresses
