@@ -25,7 +25,7 @@ class Address:
 def on_message(message, data):
     """ Receives a message from the script """
     # print("[on_message] message:", message, "data:", data)
-    global filtered_addresses, proc_info, is_scanning
+    global temp_addresses, proc_info
 
     if not 'payload' in message:
         print("Something went wrong!")
@@ -38,10 +38,10 @@ def on_message(message, data):
             proc_info = message['payload']['data']
             # print("pi", proc_info)
 
-        elif message_type == "dump": # and is_scanning:
-            print("dump")
+        elif message_type == "dump":
+            # print("dump")
             # print(message['payload']['data'])
-            filtered_addresses = scan_mem(message['payload']['data'])
+            temp_addresses = scan_mem(message['payload']['data'])
 
 
 def scan_mem(dump) -> dict:
@@ -156,17 +156,18 @@ proc = sys.argv[1]
 device = frida.get_device('local')
 pid = device.spawn(proc, stdio="pipe",)
 session = device.attach(pid)
+# session = frida.attach("test")
 
-print("Process started, injecting", inject_script)
+# print("Process started, injecting", inject_script)
 script = session.create_script(js)
 
 
 # Set up variables and data for my analyzer
 to_exit = False
-is_scanning = False
 
-saved_addresses: dict = {}        # saved addresses
-filtered_addresses: dict = {}     # addresses on display on the screen
+saved_addresses: dict = {}      # saved addresses
+filtered_addresses: dict = {}   # addresses on display on the screen
+temp_addresses: dict = {}       # on_message puts things here, deal with them after scanning
 
 data_format = "hex"         # one of hex, dec, str, or bin
 
@@ -184,14 +185,14 @@ proc_name = proc_info["name"]
 proc_base = proc_info["base"]
 proc_size = proc_info["size"]
 
-
 #############################
 #   run the project here    #
 #############################
 
-print("Welcome to memsearch!")
-print("Analyzing", proc_name, "starting from", proc_base)
+print(cr.Fore.BLACK + cr.Back.WHITE + "Welcome to memsearch!")
+print("Analyzing", proc_name, "starting from", proc_base, "with PID", pid)
 while not to_exit:
+    # device.resume(pid)
     # print(filtered_addresses)
     print("Choose an option: "
           "\n* "+gren("[i]")+"nitial scan"
@@ -218,9 +219,8 @@ while not to_exit:
     if choice == "i":
         print("Calling Frida to dump the memory with hexdump")
         # filtered_addresses = scan_mem()
-        is_scanning = True
         script.on("message", on_message)
-        is_scanning = False
+        filtered_addresses = temp_addresses.copy()
 
     elif choice == "s":
         print("Which address would you like to save?")
@@ -242,15 +242,22 @@ while not to_exit:
         scan = scan_mem()
         # TODO: convert val to hex based on data_format
         filtered_addresses = find_val(update_mem(saved_addresses, scan), val)
+
     elif choice == "=":
-        scan = scan_mem()
-        filtered_addresses = values_same(update_mem(saved_addresses, scan))
+        script.on("message", on_message)
+        prev_size = len(filtered_addresses)
+        filtered_addresses = values_same(update_mem(filtered_addresses, temp_addresses))
+        print(cr.Fore.MAGENTA + str(len(filtered_addresses)) + " out of " + str(prev_size) + " remain")
     elif choice == ">":
-        scan = scan_mem()
-        filtered_addresses = values_greater(update_mem(saved_addresses, scan))
+        script.on("message", on_message)
+        prev_size = len(filtered_addresses)
+        filtered_addresses = values_greater(update_mem(filtered_addresses, temp_addresses))
+        print(cr.Fore.MAGENTA + str(len(filtered_addresses)) + " out of " + str(prev_size) + " remain")
     elif choice == "<":
-        scan = scan_mem()
-        filtered_addresses = values_less(update_mem(saved_addresses, scan))
+        script.on("message", on_message)
+        prev_size = len(filtered_addresses)
+        filtered_addresses = values_less(update_mem(filtered_addresses, temp_addresses))
+        print(cr.Fore.MAGENTA + str(len(filtered_addresses)) + " out of " + str(prev_size) + " remain")
 
     elif choice == "f":
         print("Choose one of "+gren("[h]")+"ex, "+gren("[d]")+"ec, "+gren("[b]")+"inary, or "+gren("[s]")+"tring")
