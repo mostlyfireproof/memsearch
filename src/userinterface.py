@@ -25,7 +25,7 @@ class Address:
 def on_message(message, data):
     """ Receives a message from the script """
     # print("[on_message] message:", message, "data:", data)
-    global filtered_addresses, proc_info
+    global filtered_addresses, proc_info, is_scanning
 
     if not 'payload' in message:
         print("Something went wrong!")
@@ -33,13 +33,12 @@ def on_message(message, data):
     elif 'type' in message['payload']:
         message_type = message['payload']['type']
         if message_type == "properties":
-            print("AAAAAAAAA")
-            # print("data", message['payload']['data'])
+            # print("AAAAAAAAA")
 
             proc_info = message['payload']['data']
-            print("pi", proc_info)
+            # print("pi", proc_info)
 
-        elif message_type == "dump":
+        elif message_type == "dump": # and is_scanning:
             print("dump")
             # print(message['payload']['data'])
             filtered_addresses = scan_mem(message['payload']['data'])
@@ -47,10 +46,6 @@ def on_message(message, data):
 
 def scan_mem(dump) -> dict:
     """ Calls on Frida to scan the memory of a program """
-    # TODO: use Frida
-    # do i even need Frida
-    # for now assume that this gets a string
-    # const p = Process.enumerateModules()[0]; console.log(hexdump(p.base));
     addresses = {}
 
     from_frida = str(dump)
@@ -62,18 +57,17 @@ def scan_mem(dump) -> dict:
         data = lines[i].split()
         location = data[0]
 
+        # print("line", i, "has", data)
+
         value = ""
         for j in range(1, 17):
             value += data[j]
 
         addr = Address(location, value)
-        addresses.update({location, addr})
+        # print(i, "has", location, "with", addr)
+        addresses[location] = addr
 
-    # examples
-    addresses.update({"0x0": Address("0x0", hex(0))})
-    addresses.update({"0x123": Address("0x123", hex(123))})
-
-    print(addresses)
+    # print(addresses)
     return addresses
 
 
@@ -169,6 +163,7 @@ script = session.create_script(js)
 
 # Set up variables and data for my analyzer
 to_exit = False
+is_scanning = False
 
 saved_addresses: dict = {}        # saved addresses
 filtered_addresses: dict = {}     # addresses on display on the screen
@@ -181,9 +176,9 @@ proc_info = {}
 script.on("message", on_message)
 script.load()
 
-print("BBBBBBbb")
+# print("BBBBB")
 proc_info = json.loads(proc_info)
-print("proc info", proc_info)
+# print("proc info", proc_info)
 
 proc_name = proc_info["name"]
 proc_base = proc_info["base"]
@@ -221,9 +216,11 @@ while not to_exit:
     print("\n")
 
     if choice == "i":
-        print("this will call Frida to dump the memory with hexdump")
+        print("Calling Frida to dump the memory with hexdump")
         # filtered_addresses = scan_mem()
-        script.load()
+        is_scanning = True
+        script.on("message", on_message)
+        is_scanning = False
 
     elif choice == "s":
         print("Which address would you like to save?")

@@ -6,13 +6,13 @@ const m = Process.enumerateModules()[0];
 
 // Print its properties:
 const properties = JSON.stringify(m);
-console.log(properties);
+// console.log(properties);
 
 send({type:"properties", data:properties});
 
 // Dump it from its base address:
 const dump = hexdump(m.base);
-console.log(dump);
+// console.log(dump);
 
 send({type:"dump", data:dump});
 
