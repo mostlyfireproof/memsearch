@@ -1,4 +1,5 @@
 import json
+import frida
 import colorama as cr
 # colorama init:
 cr.init(autoreset=True)
@@ -118,7 +119,22 @@ def addrs_to_str(addrs: list):
 
     return output
 
-# attach to program up here?
+
+#############################
+#   initialization code     #
+#############################
+if len(sys.argv) < 2:
+    raise ValueError(f"USAGE {sys.argv[0]} [program_to_search: e.g., /bin/ls or ./a.out]")
+
+proc = sys.argv[1]
+
+# attach to program up here
+inject_script = 'memsearch.js'
+with open(inject_script, 'r') as f:
+    js = f.read()
+
+
+
 # temp data:
 proc_info = json.loads('{"name":"a.out","base":"0x55b29249d000","size":20480,"path":"/mnt/d/final/src/a.out"}')
 # get these from const p = Process.enumerateModules()[0]; console.log(JSON.stringify(p))
@@ -133,6 +149,10 @@ saved_addresses: dict = {}        # saved addresses
 filtered_addresses: dict = {}     # addresses on display on the screen
 
 data_format = "hex"         # one of hex, dec, str, or bin
+
+#############################
+#   run the project here    #
+#############################
 
 print("Welcome to memsearch!")
 print("Analyzing", proc_name, "starting from", proc_base)
