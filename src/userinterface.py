@@ -77,11 +77,11 @@ def update_mem(addrs1: dict, addrs2: dict) -> dict:
     # for i in addrs1.keys():
     #     updated.update(i, addrs1[i])
 
-    print("updated1:", updated)
+    # print("updated1:", updated)
     for addr in addrs2.keys():
         if addr in addrs1.keys():
             updated[addr] = addrs2[addr]
-    print("updated:", updated)
+    # print("updated:", updated)
     return updated
 
 
@@ -154,9 +154,11 @@ with open(inject_script, 'r') as f:
 
 proc = sys.argv[1]
 device = frida.get_device('local')
-pid = device.spawn(proc, stdio="pipe",)
+pid = device.spawn(proc)
 session = device.attach(pid)
-# session = frida.attach("test")
+
+print(pid)
+print(session)
 
 # print("Process started, injecting", inject_script)
 script = session.create_script(js)
@@ -169,7 +171,7 @@ saved_addresses: dict = {}      # saved addresses
 filtered_addresses: dict = {}   # addresses on display on the screen
 temp_addresses: dict = {}       # on_message puts things here, deal with them after scanning
 
-data_format = "hex"         # one of hex, dec, str, or bin
+data_format = "hex"         # one of hex, dec, UTF-8 str, UTF-16 str, or bin
 
 proc_info = {}
 
@@ -177,13 +179,13 @@ proc_info = {}
 script.on("message", on_message)
 script.load()
 
-# print("BBBBB")
 proc_info = json.loads(proc_info)
-# print("proc info", proc_info)
 
 proc_name = proc_info["name"]
 proc_base = proc_info["base"]
 proc_size = proc_info["size"]
+
+device.resume(pid)
 
 #############################
 #   run the project here    #
@@ -192,7 +194,6 @@ proc_size = proc_info["size"]
 print(cr.Fore.BLACK + cr.Back.WHITE + "Welcome to memsearch!")
 print("Analyzing", proc_name, "starting from", proc_base, "with PID", pid)
 while not to_exit:
-    # device.resume(pid)
     # print(filtered_addresses)
     print("Choose an option: "
           "\n* "+gren("[i]")+"nitial scan"
@@ -217,10 +218,12 @@ while not to_exit:
     print("\n")
 
     if choice == "i":
-        print("Calling Frida to dump the memory with hexdump")
+        print(cr.Fore.MAGENTA + "Calling Frida to dump the memory with hexdump")
         # filtered_addresses = scan_mem()
         script.on("message", on_message)
+        # script.load()
         filtered_addresses = temp_addresses.copy()
+        print(cr.Fore.MAGENTA + "Found " + str(len(filtered_addresses)) + " addresses")
 
     elif choice == "s":
         print("Which address would you like to save?")
@@ -245,22 +248,26 @@ while not to_exit:
 
     elif choice == "=":
         script.on("message", on_message)
+        # script.load()
         prev_size = len(filtered_addresses)
         filtered_addresses = values_same(update_mem(filtered_addresses, temp_addresses))
         print(cr.Fore.MAGENTA + str(len(filtered_addresses)) + " out of " + str(prev_size) + " remain")
     elif choice == ">":
         script.on("message", on_message)
+        # script.load()
         prev_size = len(filtered_addresses)
         filtered_addresses = values_greater(update_mem(filtered_addresses, temp_addresses))
         print(cr.Fore.MAGENTA + str(len(filtered_addresses)) + " out of " + str(prev_size) + " remain")
     elif choice == "<":
         script.on("message", on_message)
+        # script.load()
         prev_size = len(filtered_addresses)
         filtered_addresses = values_less(update_mem(filtered_addresses, temp_addresses))
         print(cr.Fore.MAGENTA + str(len(filtered_addresses)) + " out of " + str(prev_size) + " remain")
 
     elif choice == "f":
-        print("Choose one of "+gren("[h]")+"ex, "+gren("[d]")+"ec, "+gren("[b]")+"inary, or "+gren("[s]")+"tring")
+        print("Choose one of "+gren("[h]")+"ex, "+gren("[d]")+"ec, "+gren("[b]")+"inary, "
+              "UTF-"+gren("[8]")+" string, or UTF-1"+gren("[6]")+" string")
         print("(Currently" + data_format + ")")
         selection = input("> ").lower()
 
@@ -270,8 +277,10 @@ while not to_exit:
             data_format = "dec"
         elif selection == "b":
             data_format = "bin"
-        elif selection == "s":
-            data_format = "str"
+        elif selection == "8":
+            data_format = "utf8"
+        elif selection == "6":
+            data_format = "utf16"
             # will need to do things like hex(ord( ))
         else:
             print(cr.Fore.YELLOW + "Invalid input!")
