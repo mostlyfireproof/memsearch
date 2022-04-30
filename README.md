@@ -27,6 +27,7 @@ but I expanded the scope to target any program.
 I decided on creating something similar to Cheat Engine,
 but built on Frida so it can run on any operating system and target mobile programs as well.
 I switched to developing on Linux partially through my work, so this design decision made it a lot easier.
+Also, this program will be fully open source so developers can contribute or change up my program.
 
 ## How Does It Work?
 
@@ -35,7 +36,7 @@ It runs a script with RPC to first get the program info, such as its name and lo
 then uses this RPC to its full advantage by utilizing it to call a function to dump the memory.
 
 The main Python program then takes this memory, 
-and stores it in a class with the address, current value, and intial value.
+and stores it in a class with the address, current value, and initial value.
 The user can then filter down this memory to find a specific address, such as health, gold, 
 or number of items in a stack.
 
@@ -48,14 +49,17 @@ with the address as a key and the class with the data as a value.
 
 Currently, the program only gets the initial memory.
 
+I tested it on the game Terraria to change the player's health, and (insert another game here)
+
 *todo: finish the program and writeup*
 
 ## Future Plans
 
 * Save annotated memory addresses to a file to make it easier to analyze a program repeatedly
-  * Users can also share these to other users analyzing the same program
+  * Users will also be able to share these to other users analyzing the same program
 * Store the memory history
 * Add an easy interface to hook functions
+* Lock the value of an address
 
 ## Related Work
 
