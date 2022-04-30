@@ -89,7 +89,7 @@ def find_val(addrs: dict, value: str) -> dict:
     """Searches memory to find an exact value, and returns any addresses that hold it"""
     validated = {}
     for addr in addrs.keys():
-        if addrs[addr].value == value:
+        if value in addrs[addr].value:
             validated.update({addr, addrs[addr]})
     return validated
 
@@ -157,12 +157,11 @@ device = frida.get_device('local')
 pid = device.spawn(proc)
 session = device.attach(pid)
 
-print(pid)
-print(session)
+# print(pid)
+# print(session)
 
 # print("Process started, injecting", inject_script)
 script = session.create_script(js)
-
 
 # Set up variables and data for my analyzer
 to_exit = False
@@ -178,6 +177,12 @@ proc_info = {}
 # Get properties
 script.on("message", on_message)
 script.load()
+# script.eternalize()
+
+# I HAVE NO IDEA WHY RPCDUMP DOESN'T WORK, BUT ADD DOES
+# print(script.exports.add(1, 2))
+# print(script.exports.add(3, 7))
+# print(script.exports.rpcDump("hi"))
 
 proc_info = json.loads(proc_info)
 
@@ -220,8 +225,9 @@ while not to_exit:
     if choice == "i":
         print(cr.Fore.MAGENTA + "Calling Frida to dump the memory with hexdump")
         # filtered_addresses = scan_mem()
-        script.on("message", on_message)
+        # script.on("message", on_message)
         # script.load()
+        temp_addresses = scan_mem(script.exports.add(1, 2))
         filtered_addresses = temp_addresses.copy()
         print(cr.Fore.MAGENTA + "Found " + str(len(filtered_addresses)) + " addresses")
 
@@ -242,9 +248,9 @@ while not to_exit:
 
     elif choice == "e":
         val = input("Enter a value: ")
-        scan = scan_mem()
+        script.on("message", on_message)
         # TODO: convert val to hex based on data_format
-        filtered_addresses = find_val(update_mem(saved_addresses, scan), val)
+        filtered_addresses = find_val(update_mem(saved_addresses, temp_addresses), val)
 
     elif choice == "=":
         script.on("message", on_message)
