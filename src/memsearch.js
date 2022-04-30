@@ -19,13 +19,6 @@ function sendDump() {
 }
 sendDump();
 
-// while (true) {
-//     sendDump();
-//     sleep(100)
-// }
-
-
-// setInterval(sendDump, 1000);
 
 // I HAVE NO IDEA WHY RPCDUMP DOESN'T WORK, BUT ADD DOES
 rpc.exports = {
@@ -34,9 +27,21 @@ rpc.exports = {
         // return hexdump(m.base);
         return("AAAAAAAAAa")
     },
+    // dumps the memory
     add(a, b) {
         return hexdump(m.base);
-        // return("CCCCCC")
-        // return a + b;
+    },
+    // Scans the memory for a given pattern
+    search(pattern) {
+        var found = new Array()
+        Memory.scan(m.base, m.size, pattern, {
+            onMatch(address, size) {
+                found.push(address)
+                console.log('Memory.scan() found match at', address,
+                            'with size', size);
+            }
+        });
+        return found;
+
     }
 };
