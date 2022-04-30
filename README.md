@@ -41,8 +41,14 @@ or number of items in a stack.
 
 *todo: add a video showing this here*
 
+Internally, memsearch makes heavy use of dictionaries to store the memory in a key:value pair 
+with the address as a key and the class with the data as a value.
 
 ## Results
+
+Currently, the program only gets the initial memory.
+
+*todo: finish the program and writeup*
 
 ## Future Plans
 
