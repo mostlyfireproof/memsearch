@@ -28,7 +28,7 @@ def on_message(message, data):
     global temp_addresses, proc_info
 
     if not 'payload' in message:
-        print("Something went wrong!")
+        print(cr.Fore.RED + "Something went wrong!")
 
     elif 'type' in message['payload']:
         message_type = message['payload']['type']
@@ -41,11 +41,44 @@ def on_message(message, data):
         elif message_type == "dump":
             # print("dump")
             # print(message['payload']['data'])
-            temp_addresses = scan_mem(message['payload']['data'])
+            temp_addresses = scan_mem_old(message['payload']['data'])
 
 
-def scan_mem(dump) -> dict:
+def scan_mem() -> dict:
     """ Calls on Frida to scan the memory of a program """
+    print(cr.Fore.MAGENTA + "SCANNING")
+
+    addresses = {}
+
+    from_frida = script.exports.add(1, 2)
+    print(cr.Fore.RED + str(type(from_frida)))
+    # from_frida = str(from_frida)
+    # print(from_frida)
+
+    for content in from_frida:
+
+        lines = content.split("\n")
+
+        for i in range(1, len(lines)):
+            data = lines[i].split()
+            location = data[0]
+
+            # print("line", i, "has", data)
+
+            value = ""
+            for j in range(1, 17):
+                value += data[j]
+
+            addr = Address(location, value)
+            # print(i, "has", location, "with", addr)
+            addresses[location] = addr
+
+    # print(addresses)
+    return addresses
+
+
+def scan_mem_old(dump) -> dict:
+    """ Processes memory dumps """
     addresses = {}
 
     from_frida = str(dump)
@@ -87,6 +120,7 @@ def update_mem(addrs1: dict, addrs2: dict) -> dict:
 
 def find_val(addrs: dict, value: str) -> dict:
     """Searches memory to find an exact value, and returns any addresses that hold it"""
+    # TODO: use rpc search(pattern)
     validated = {}
     for addr in addrs.keys():
         if value in addrs[addr].value:
@@ -224,10 +258,11 @@ while not to_exit:
 
     if choice == "i":
         print(cr.Fore.MAGENTA + "Calling Frida to dump the memory with hexdump")
-        # filtered_addresses = scan_mem()
+        # filtered_addresses = scan_mem_old()
         # script.on("message", on_message)
         # script.load()
-        temp_addresses = scan_mem(script.exports.add(1, 2))
+        # temp_addresses = scan_mem_old(script.exports.add(1, 2))
+        temp_addresses = scan_mem()
         filtered_addresses = temp_addresses.copy()
         print(cr.Fore.MAGENTA + "Found " + str(len(filtered_addresses)) + " addresses")
 
@@ -248,25 +283,32 @@ while not to_exit:
 
     elif choice == "e":
         val = input("Enter a value: ")
-        script.on("message", on_message)
+        # script.on("message", on_message)
         # TODO: convert val to hex based on data_format
-        filtered_addresses = find_val(update_mem(saved_addresses, temp_addresses), val)
+        # filtered_addresses = find_val(update_mem(saved_addresses, temp_addresses), val)
+        # pattern = ord(val)
+        results = script.exports.search(val)
+        print(results)
+
 
     elif choice == "=":
-        script.on("message", on_message)
+        # script.on("message", on_message)
         # script.load()
+        temp_addresses = scan_mem()
         prev_size = len(filtered_addresses)
         filtered_addresses = values_same(update_mem(filtered_addresses, temp_addresses))
         print(cr.Fore.MAGENTA + str(len(filtered_addresses)) + " out of " + str(prev_size) + " remain")
     elif choice == ">":
-        script.on("message", on_message)
+        # script.on("message", on_message)
         # script.load()
+        temp_addresses = scan_mem()
         prev_size = len(filtered_addresses)
         filtered_addresses = values_greater(update_mem(filtered_addresses, temp_addresses))
         print(cr.Fore.MAGENTA + str(len(filtered_addresses)) + " out of " + str(prev_size) + " remain")
     elif choice == "<":
-        script.on("message", on_message)
+        # script.on("message", on_message)
         # script.load()
+        temp_addresses = scan_mem()
         prev_size = len(filtered_addresses)
         filtered_addresses = values_less(update_mem(filtered_addresses, temp_addresses))
         print(cr.Fore.MAGENTA + str(len(filtered_addresses)) + " out of " + str(prev_size) + " remain")
