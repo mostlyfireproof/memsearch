@@ -17,8 +17,6 @@ function sendDump() {
 }
 sendDump();
 
-// console.log(Process.enumerateRanges());
-
 
 // I HAVE NO IDEA WHY RPCDUMP DOESN'T WORK, BUT ADD DOES
 rpc.exports = {
@@ -29,8 +27,6 @@ rpc.exports = {
     },
     // dumps the memory
     add(a, b) {
-        // m = Process.enumerateModules()[0];
-        // return hexdump(m.base);
         var mems = new Array();
         const modules = Process.enumerateModules();
         for (let i = 0; i < modules.length; i++) {
@@ -56,7 +52,7 @@ rpc.exports = {
         Memory.scan(m.base, m.size, pattern, {
             onMatch(address, size) {
                 found.push(address)
-                console.log('Memory.scan() found match at', address,
+                console.log('Found match of', pattern, 'at', address,
                             'with size', size);
             }
         });

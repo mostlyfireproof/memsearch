@@ -51,8 +51,6 @@ def scan_mem() -> dict:
     addresses = {}
 
     from_frida = script.exports.add(1, 2)
-    print(cr.Fore.RED + str(type(from_frida)))
-    # from_frida = str(from_frida)
     # print(from_frida)
 
     for content in from_frida:
@@ -248,7 +246,7 @@ while not to_exit:
           + gren("[<]")+" less than previous scan, "+gren("[=]")+" same as previous scan"
           "\n* "+gren("[e]")+"xact value"
                               
-          "\n* choose "+gren("[f]")+"ormat"
+          # "\n* choose "+gren("[f]")+"ormat"
                                     
           "\n* "+gren("[w]")+"rite to an address"      
                              
