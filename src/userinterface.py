@@ -63,14 +63,13 @@ def scan_mem() -> dict:
             data = lines[i].split()
             location = data[0]
 
-            # print("line", i, "has", data)
 
             value = ""
             for j in range(1, 17):
                 value += data[j]
 
             addr = Address(location, value)
-            # print(i, "has", location, "with", addr)
+            # print(cr.Fore.BLUE + location + " " + cr.Fore.CYAN + value)
             addresses[location] = addr
 
     # print(addresses)
@@ -106,14 +105,18 @@ def scan_mem_old(dump) -> dict:
 
 def update_mem(addrs1: dict, addrs2: dict) -> dict:
     """ Takes in 2 dictionaries of addresses and returns the first one with new values from the second """
-    updated = filtered_addresses
+    updated = addrs1.copy()
     # for i in addrs1.keys():
     #     updated.update(i, addrs1[i])
 
     # print("updated1:", updated)
     for addr in addrs2.keys():
         if addr in addrs1.keys():
+            updated[addr].update_val(addrs2[addr].value)
+            # print("updated", addr)
+        else:
             updated[addr] = addrs2[addr]
+            print("new value at", addr)
     # print("updated:", updated)
     return updated
 
