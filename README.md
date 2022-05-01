@@ -18,6 +18,8 @@ A CLI program to read and write program memory, built on Frida
     * `e` searches for an exact value, with a format specified with `f`
     * `w` writes a value to an address, allowing live memory editing
 
+![Showcase](img/demo1.png)
+
 # Writeup
 
 ## Goals
@@ -49,9 +51,8 @@ with the address as a key and the class with the data as a value.
 
 Currently, the program only gets the initial memory.
 
-I tested it on the game Terraria to change the player's health, and (insert another game here)
-
-*todo: finish the program and writeup*
+I tested it on the game Terraria to change the player's health and inventory, 
+and the included test.c file to stop the timer.
 
 ## Future Plans
 
